@@ -1,14 +1,10 @@
-// lib/models/card_model.dart
 class CardModel {
-  final String identifier; // Unique identifier for matching
-  final String imagePath; // Path to the front image
-  bool isFaceUp;
-  bool isMatched;
+  final String frontDesign; // The design/image shown when the card is face-up
+  final String backDesign; // The design/image shown when the card is face-down
+  bool isFlipped; // Whether the card is currently face-up
 
-  CardModel({
-    required this.identifier,
-    required this.imagePath,
-    this.isFaceUp = false,
-    this.isMatched = false,
-  });
+  CardModel(
+      {required this.frontDesign,
+      required this.backDesign,
+      this.isFlipped = false});
 }
