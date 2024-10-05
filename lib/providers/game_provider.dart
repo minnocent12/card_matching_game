@@ -1,3 +1,5 @@
+// lib/providers/game_provider.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/card_model.dart';
@@ -5,15 +7,15 @@ import '../models/card_model.dart';
 class GameProvider with ChangeNotifier {
   List<CardModel> cards = [];
   int score = 0;
-  late Timer timer;
+  Timer? timer; // Nullable Timer to allow proper cancellation
   int elapsedTime = 0; // Time elapsed in seconds
   int matchedPairs = 0;
-  List<CardModel> flippedCards = []; // Track the currently flipped cards
-  bool isGameOver = false; // Track game state for victory
+  List<CardModel> flippedCards = []; // Currently flipped cards
+  bool isGameOver = false; // Game over state
 
-  // Fields to track best score and best time
-  int bestScore = 0; // Track best score
-  int bestTime = 0; // Track best time
+  // Best score and time
+  int bestScore = 0;
+  int bestTime = 0;
 
   GameProvider() {
     _initCards();
@@ -40,92 +42,71 @@ class GameProvider with ChangeNotifier {
     ];
     cards.shuffle(); // Shuffle the cards
     isGameOver = false; // Reset game over state
-    _startTimer(); // Start the timer when the game begins
+    _startTimer(); // Start the timer
+    notifyListeners();
   }
 
   void _startTimer() {
-    elapsedTime = 0; // Reset elapsed time to 0
+    elapsedTime = 0; // Reset elapsed time
+    timer?.cancel(); // Cancel any existing timer
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      elapsedTime++; // Increment elapsed time every second
-      notifyListeners(); // Notify listeners to update UI
+      elapsedTime++; // Increment elapsed time
+      notifyListeners(); // Update UI
     });
   }
 
-  // Flip the card and check for matching logic
   void flipCard(CardModel card, BuildContext context) {
     if (card.isFlipped || isGameOver)
-      return; // If card is already flipped or game is over
+      return; // Prevent flipping already flipped or game over
 
     card.isFlipped = true; // Flip the card
-    flippedCards.add(card); // Add to flipped cards list
+    flippedCards.add(card); // Add to flipped cards
     notifyListeners();
 
     if (flippedCards.length == 2) {
       Future.delayed(Duration(milliseconds: 500), () {
         if (flippedCards[0].frontDesign == flippedCards[1].frontDesign) {
-          // Cards match
+          // Match found
           matchedPairs++;
-          score += 20; // Increase score for matching
+          score += 20; // Increase score
 
           if (matchedPairs == (cards.length ~/ 2)) {
-            // Game over condition: all pairs matched
-            isGameOver = true; // Set game over state
-            timer.cancel(); // Stop the timer when the game ends
-            _updateBestScores(); // Update best score and time if necessary
-            _showVictoryDialog(context); // Show victory message
+            // All pairs matched, game over
+            isGameOver = true; // Set game over
+            timer?.cancel(); // Stop the timer
+            _updateBestScores(); // Update best score and time
+            notifyListeners(); // Update UI
           }
         } else {
-          score -= 5; // Deduct points for mismatches
+          // Not a match
+          score -= 5; // Deduct score
           for (var c in flippedCards) {
             c.isFlipped = false; // Flip back down
           }
         }
-        flippedCards.clear(); // Clear the list of flipped cards
-        notifyListeners(); // Notify listeners to update UI
+        flippedCards.clear(); // Clear flipped cards
+        notifyListeners(); // Update UI
       });
     }
   }
 
-  // Update the best score and time after game completion
   void _updateBestScores() {
     if (score > bestScore) bestScore = score;
     if (elapsedTime < bestTime || bestTime == 0) bestTime = elapsedTime;
   }
 
-  // Show the victory dialog with the final score and time
-  void _showVictoryDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Congratulations!'),
-          content: Text(
-            'You matched all pairs!\n'
-            'Your score: $score\n'
-            'Time taken: $elapsedTime seconds\n'
-            'Best Score: $bestScore\n'
-            'Best Time: $bestTime seconds',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Reset game and reinitialize the cards, score, and timer
   void resetGame() {
     score = 0;
     matchedPairs = 0;
-    flippedCards.clear(); // Clear flipped cards
-    _initCards(); // Re-initialize cards
-    isGameOver = false; // Reset game over state
+    flippedCards.clear(); // Clear any flipped cards
+    _initCards(); // Reinitialize cards
+    isGameOver = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel(); // Cancel the timer when disposing
+    super.dispose();
   }
 }

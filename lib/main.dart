@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/game_provider.dart';
@@ -11,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => GameProvider(),
+      create: (_) => GameProvider(),
       child: MaterialApp(
         title: 'Card Matching Game',
         theme: ThemeData(
